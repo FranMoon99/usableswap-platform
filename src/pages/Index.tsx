@@ -52,17 +52,19 @@ const Index = () => {
                   description: "No cobramos comisión por tus ventas. El valor total es para ti."
                 }
               ].map((item, index) => (
-                <div 
+                <motion.div 
                   key={index}
-                  className="text-center p-6 animate-fade-in"
-                  style={{ animationDelay: `${index * 200}ms` }}
+                  className="text-center p-6"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.2 }}
                 >
                   <div className="mx-auto w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-4">
                     {item.icon}
                   </div>
                   <h3 className="text-xl font-medium mb-2">{item.title}</h3>
                   <p className="text-gray-600">{item.description}</p>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
@@ -102,10 +104,12 @@ const Index = () => {
                   avatar: "https://randomuser.me/api/portraits/men/67.jpg"
                 }
               ].map((testimonial, index) => (
-                <div 
+                <motion.div 
                   key={index}
-                  className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 animate-fade-in"
-                  style={{ animationDelay: `${index * 200}ms` }}
+                  className="bg-white p-6 rounded-xl shadow-sm border border-gray-100"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.2 }}
                 >
                   <div className="flex items-center mb-4">
                     <div className="flex-shrink-0">
@@ -128,7 +132,7 @@ const Index = () => {
                       </svg>
                     ))}
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
@@ -137,18 +141,32 @@ const Index = () => {
         {/* CTA Section */}
         <section className="py-20 bg-gradient-to-r from-primary/90 to-blue-600/90 text-white">
           <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">¿Tienes algo que vender?</h2>
-            <p className="text-white/90 max-w-2xl mx-auto mb-8 text-lg">
-              Únete a miles de usuarios que ya están vendiendo sus artículos usados y ganando dinero extra.
-            </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <button className="bg-white text-primary font-medium px-8 py-3 rounded-full hover:bg-gray-100 transition-colors">
-                Vender ahora
-              </button>
-              <button className="bg-transparent border border-white text-white font-medium px-8 py-3 rounded-full hover:bg-white/10 transition-colors">
-                Saber más
-              </button>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">¿Tienes algo que vender?</h2>
+              <p className="text-white/90 max-w-2xl mx-auto mb-8 text-lg">
+                Únete a miles de usuarios que ya están vendiendo sus artículos usados y ganando dinero extra.
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <motion.button 
+                  className="bg-white text-primary font-medium px-8 py-3 rounded-full hover:bg-gray-100 transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Vender ahora
+                </motion.button>
+                <motion.button 
+                  className="bg-transparent border border-white text-white font-medium px-8 py-3 rounded-full hover:bg-white/10 transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Saber más
+                </motion.button>
+              </div>
+            </motion.div>
           </div>
         </section>
       </main>
