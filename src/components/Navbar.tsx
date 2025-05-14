@@ -1,13 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, User, Heart, ShoppingBag, Menu, X } from 'lucide-react';
+import { Search, Heart, ShoppingBag, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import AuthButtons from './AuthButtons';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -68,9 +71,9 @@ const Navbar = () => {
           <Button variant="ghost" size="icon" className="rounded-full hover:bg-gray-100">
             <Heart className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-gray-100">
-            <User className="h-5 w-5" />
-          </Button>
+          
+          <AuthButtons />
+          
           <Button className="rounded-full">
             <ShoppingBag className="h-5 w-5 mr-2" />
             <span>Vender artículo</span>
@@ -90,7 +93,7 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden glass-effect absolute top-full left-0 right-0 px-4 py-5 shadow-lg animate-slide-down">
+        <div className="md:hidden glass-effect absolute top-full left-0 right-0 px-4 py-5 shadow-lg animate-slide-down bg-white/95">
           <nav className="flex flex-col space-y-4 mb-6">
             <Link 
               to="/" 
@@ -122,12 +125,20 @@ const Navbar = () => {
             </Link>
           </nav>
           <div className="flex items-center space-x-4">
-            <Button variant="outline" size="sm" className="flex-1">
-              Iniciar sesión
-            </Button>
-            <Button size="sm" className="flex-1">
-              Registrarse
-            </Button>
+            {isAuthenticated ? (
+              <Button variant="outline" size="sm" className="flex-1" asChild>
+                <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)}>Mi Perfil</Link>
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" size="sm" className="flex-1" asChild>
+                  <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>Iniciar sesión</Link>
+                </Button>
+                <Button size="sm" className="flex-1" asChild>
+                  <Link to="/register" onClick={() => setIsMobileMenuOpen(false)}>Registrarse</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       )}
