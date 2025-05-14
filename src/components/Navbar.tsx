@@ -74,9 +74,11 @@ const Navbar = () => {
           
           <AuthButtons />
           
-          <Button className="rounded-full">
-            <ShoppingBag className="h-5 w-5 mr-2" />
-            <span>Vender artículo</span>
+          <Button className="rounded-full" asChild>
+            <Link to="/sell">
+              <ShoppingBag className="h-5 w-5 mr-2" />
+              <span>Vender artículo</span>
+            </Link>
           </Button>
         </div>
 
