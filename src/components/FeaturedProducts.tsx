@@ -1,11 +1,10 @@
-
 import React from 'react';
 import ProductCard, { ProductProps } from './ProductCard';
 
 // Mock data for featured products
 const mockProducts: ProductProps[] = [
   {
-    id: '1',
+    id: '1',  // This ID matches with the mock product detail data
     title: 'iPhone 13 Pro Max - 256GB',
     price: 750,
     image: 'https://images.unsplash.com/photo-1611472173362-3f53dbd65d80?q=80&w=2874&auto=format&fit=crop',
