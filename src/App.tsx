@@ -17,6 +17,7 @@ import SellProduct from "./pages/SellProduct";
 import SearchResults from "./pages/SearchResults";
 import Conversations from "./pages/Conversations";
 import Favorites from "./pages/Favorites";
+import EmailVerification from "./pages/EmailVerification"; // Added email verification page
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/conversations" element={<Conversations />} />
               <Route path="/conversations/:conversationId" element={<Conversations />} />
               <Route path="/favorites" element={<Favorites />} />
+              <Route path="/verify-email" element={<EmailVerification />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -11,6 +11,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { toast } from 'sonner';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MailCheck } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Correo electrónico inválido' }),
@@ -22,6 +24,8 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [verificationError, setVerificationError] = React.useState(false);
+  const [verificationEmail, setVerificationEmail] = React.useState("");
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -40,10 +44,26 @@ const Login = () => {
       navigate('/');
     } catch (error) {
       console.error('Login error:', error);
-      toast.error('Error al iniciar sesión', {
-        description: 'Por favor verifica tus credenciales e intenta de nuevo'
-      });
+      
+      // Check if it's an email verification error
+      if (error instanceof Error && error.message === 'email_not_verified') {
+        setVerificationError(true);
+        setVerificationEmail(data.email);
+        toast.error('Email no verificado', {
+          description: 'Por favor verifica tu correo electrónico para continuar'
+        });
+      } else {
+        toast.error('Error al iniciar sesión', {
+          description: 'Por favor verifica tus credenciales e intenta de nuevo'
+        });
+      }
     }
+  };
+
+  const handleVerifyClick = () => {
+    // Navigate to Register which will show verification UI if user exists
+    // In a real app you might have a dedicated verification page
+    navigate('/register');
   };
 
   return (
@@ -53,6 +73,25 @@ const Login = () => {
       <main className="flex-grow container mx-auto px-4 py-16">
         <div className="max-w-md mx-auto">
           <h1 className="text-3xl font-bold mb-6">Iniciar sesión</h1>
+          
+          {verificationError && (
+            <Alert className="mb-6 bg-amber-50 border-amber-200">
+              <MailCheck className="h-5 w-5 text-amber-500" />
+              <AlertDescription className="text-amber-700">
+                Tu cuenta no ha sido verificada. Por favor verifica tu correo electrónico para poder iniciar sesión.
+                <div className="mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleVerifyClick}
+                    className="text-amber-800 border-amber-300 hover:bg-amber-100"
+                  >
+                    Verificar correo
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

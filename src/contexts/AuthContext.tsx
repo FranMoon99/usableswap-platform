@@ -6,6 +6,7 @@ type User = {
   email: string;
   name: string;
   avatar?: string;
+  emailVerified: boolean; // Added emailVerified field
 };
 
 interface AuthContextType {
@@ -15,6 +16,8 @@ interface AuthContextType {
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  verifyEmail: (token: string) => Promise<void>; // New method for email verification
+  resendVerificationEmail: () => Promise<void>; // New method to resend verification email
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,11 +44,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       setIsLoading(true);
       // In a real app, you'd make an API call to authenticate
-      // For demo purposes, we'll simulate a successful login
+      // For demo purposes, we'll simulate a successful login and check verification
+      
+      // Simulate checking if user exists in localStorage (for our mock database)
+      const usersStore = localStorage.getItem('usersDb') || '{}';
+      const users = JSON.parse(usersStore);
+      
+      if (!users[email]) {
+        throw new Error('Usuario no encontrado');
+      }
+      
+      // In real app we would verify password hash here
+      const userData = users[email];
+      
+      // Check if email is verified
+      if (!userData.emailVerified) {
+        throw new Error('email_not_verified');
+      }
+      
       const mockUser: User = {
-        id: Math.random().toString(36).substr(2, 9),
-        email,
-        name: email.split('@')[0], // Use part of email as name for demo
+        id: userData.id,
+        email: userData.email,
+        name: userData.name,
+        emailVerified: userData.emailVerified
       };
       
       // Store user in localStorage
@@ -64,15 +85,142 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsLoading(true);
       // In a real app, you'd make an API call to register the user
       // For demo purposes, we'll simulate a successful registration
-      const mockUser: User = {
-        id: Math.random().toString(36).substr(2, 9),
+      
+      // Generate an ID for the user and a verification token
+      const userId = Math.random().toString(36).substr(2, 9);
+      const verificationToken = Math.random().toString(36).substr(2, 16);
+      
+      // Store the verification token in localStorage (in a real app this would be in your database)
+      const tokens = JSON.parse(localStorage.getItem('verificationTokens') || '{}');
+      tokens[verificationToken] = {
+        email,
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
+      };
+      localStorage.setItem('verificationTokens', JSON.stringify(tokens));
+      
+      // Store the user in our mock database (localStorage)
+      const usersStore = localStorage.getItem('usersDb') || '{}';
+      const users = JSON.parse(usersStore);
+      
+      // Check if user already exists
+      if (users[email]) {
+        throw new Error('El usuario ya existe');
+      }
+      
+      users[email] = {
+        id: userId,
         email,
         name,
+        password, // In a real app, we would hash this password
+        emailVerified: false,
+        registeredAt: new Date().toISOString()
       };
       
-      // Store user in localStorage
+      localStorage.setItem('usersDb', JSON.stringify(users));
+      
+      // Create unverified user object
+      const mockUser: User = {
+        id: userId,
+        email,
+        name,
+        emailVerified: false
+      };
+      
+      // Store user in localStorage session
       localStorage.setItem('user', JSON.stringify(mockUser));
       setUser(mockUser);
+      
+      // In a real app, we'd send a verification email here
+      console.log('Verification token for', email, ':', verificationToken);
+      
+      return Promise.resolve();
+    } catch (error) {
+      return Promise.reject(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyEmail = async (token: string) => {
+    try {
+      setIsLoading(true);
+      
+      // Get tokens from localStorage
+      const tokens = JSON.parse(localStorage.getItem('verificationTokens') || '{}');
+      
+      // Check if token exists
+      if (!tokens[token]) {
+        throw new Error('Token de verificación inválido o expirado');
+      }
+      
+      // Check if token is expired
+      const tokenData = tokens[token];
+      const expiry = new Date(tokenData.expires);
+      
+      if (expiry < new Date()) {
+        throw new Error('El token ha expirado');
+      }
+      
+      // Get the email associated with this token
+      const email = tokenData.email;
+      
+      // Get users from localStorage
+      const usersStore = localStorage.getItem('usersDb') || '{}';
+      const users = JSON.parse(usersStore);
+      
+      // Check if user exists
+      if (!users[email]) {
+        throw new Error('Usuario no encontrado');
+      }
+      
+      // Update user verification status
+      users[email].emailVerified = true;
+      localStorage.setItem('usersDb', JSON.stringify(users));
+      
+      // Remove used token
+      delete tokens[token];
+      localStorage.setItem('verificationTokens', JSON.stringify(tokens));
+      
+      // Update current user if it's the same user
+      if (user && user.email === email) {
+        const updatedUser = {
+          ...user,
+          emailVerified: true
+        };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+      }
+      
+      return Promise.resolve();
+    } catch (error) {
+      return Promise.reject(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const resendVerificationEmail = async () => {
+    try {
+      if (!user) {
+        throw new Error('No hay usuario activo');
+      }
+      
+      setIsLoading(true);
+      
+      // Generate a new verification token
+      const verificationToken = Math.random().toString(36).substr(2, 16);
+      
+      // Store the verification token in localStorage
+      const tokens = JSON.parse(localStorage.getItem('verificationTokens') || '{}');
+      tokens[verificationToken] = {
+        email: user.email,
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
+      };
+      localStorage.setItem('verificationTokens', JSON.stringify(tokens));
+      
+      // In a real app, we'd send a verification email here
+      console.log('New verification token for', user.email, ':', verificationToken);
+      
       return Promise.resolve();
     } catch (error) {
       return Promise.reject(error);
@@ -92,6 +240,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     login,
     register,
     logout,
+    verifyEmail,
+    resendVerificationEmail,
     isAuthenticated: !!user,
   };
 
