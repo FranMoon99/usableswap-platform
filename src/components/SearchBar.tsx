@@ -1,27 +1,41 @@
 
-import React, { useState } from 'react';
+import React, { useState, FormEvent, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 interface SearchBarProps {
   className?: string;
   placeholder?: string;
   onSearch?: (query: string) => void;
+  initialQuery?: string;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ 
   className,
   placeholder = "¿Qué estás buscando?",
-  onSearch
+  onSearch,
+  initialQuery = ''
 }) => {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [isFocused, setIsFocused] = useState(false);
+  const navigate = useNavigate();
   
-  const handleSearch = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (initialQuery) {
+      setQuery(initialQuery);
+    }
+  }, [initialQuery]);
+
+  const handleSearch = (e: FormEvent) => {
     e.preventDefault();
-    if (onSearch && query.trim()) {
-      onSearch(query.trim());
+    if (query.trim()) {
+      if (onSearch) {
+        onSearch(query.trim());
+      } else {
+        navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+      }
     }
   };
   

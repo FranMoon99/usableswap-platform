@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, Heart, ShoppingBag, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -10,7 +10,9 @@ import { useAuth } from '@/contexts/AuthContext';
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -27,6 +29,17 @@ const Navbar = () => {
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+      if (isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+      }
+    }
   };
 
   return (
@@ -65,9 +78,28 @@ const Navbar = () => {
 
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center space-x-4">
-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-gray-100">
-            <Search className="h-5 w-5" />
-          </Button>
+          <form onSubmit={handleSearch} className="relative">
+            <input
+              type="text"
+              placeholder="Buscar..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={cn(
+                "w-0 pl-9 pr-2 py-2 rounded-full border border-transparent focus:w-40 focus:border-gray-200",
+                "transition-all duration-300 outline-none bg-transparent focus:bg-white/80"
+              )}
+            />
+            <Button 
+              type="submit" 
+              variant="ghost" 
+              size="icon" 
+              className="absolute left-0 top-1/2 -translate-y-1/2 rounded-full hover:bg-gray-100"
+              disabled={!searchQuery.trim()}
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+          </form>
+          
           <Button variant="ghost" size="icon" className="rounded-full hover:bg-gray-100">
             <Heart className="h-5 w-5" />
           </Button>
@@ -96,6 +128,25 @@ const Navbar = () => {
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden glass-effect absolute top-full left-0 right-0 px-4 py-5 shadow-lg animate-slide-down bg-white/95">
+          <form onSubmit={handleSearch} className="relative mb-6">
+            <input
+              type="text"
+              placeholder="¿Qué estás buscando?"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 rounded-full border border-gray-200 bg-white/80"
+            />
+            <Button 
+              type="submit" 
+              variant="ghost" 
+              size="icon" 
+              className="absolute left-0 top-1/2 -translate-y-1/2"
+              disabled={!searchQuery.trim()}
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+          </form>
+          
           <nav className="flex flex-col space-y-4 mb-6">
             <Link 
               to="/" 

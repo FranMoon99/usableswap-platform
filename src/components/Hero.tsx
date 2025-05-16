@@ -1,16 +1,14 @@
 
-import React, { useState } from 'react';
-import { Search } from 'lucide-react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import SearchBar from './SearchBar';
 
 const categories = [
   'Electrónica', 'Moda', 'Hogar', 'Deportes', 'Juguetes', 'Libros', 'Vehículos'
 ];
 
 const Hero = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  
   return (
     <section className="relative w-full h-[85vh] min-h-[600px] overflow-hidden flex items-center">
       {/* Background gradient */}
@@ -33,21 +31,7 @@ const Hero = () => {
           
           {/* Search bar */}
           <div className="w-full max-w-2xl mx-auto">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="¿Qué estás buscando?"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-14 pl-5 pr-16 rounded-full border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-200 bg-white/90 backdrop-blur-sm shadow-sm text-base"
-              />
-              <Button 
-                className="absolute right-1 top-1 h-12 w-12 rounded-full flex items-center justify-center"
-                aria-label="Buscar"
-              >
-                <Search className="h-5 w-5" />
-              </Button>
-            </div>
+            <SearchBar placeholder="¿Qué estás buscando?" />
           </div>
           
           {/* Categories */}
