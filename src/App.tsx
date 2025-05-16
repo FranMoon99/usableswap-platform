@@ -14,6 +14,7 @@ import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import SellProduct from "./pages/SellProduct";
 import SearchResults from "./pages/SearchResults";
+import Conversations from "./pages/Conversations";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,8 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/sell" element={<SellProduct />} />
             <Route path="/search" element={<SearchResults />} />
+            <Route path="/conversations" element={<Conversations />} />
+            <Route path="/conversations/:conversationId" element={<Conversations />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

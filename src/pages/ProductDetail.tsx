@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { 
@@ -16,6 +15,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/hooks/use-toast';
 import FeaturedProducts from '@/components/FeaturedProducts';
 
 // Mock product data
@@ -59,9 +60,11 @@ const mockProductDetails = {
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(mockProductDetails);
   const [mainImage, setMainImage] = useState(mockProductDetails.images[0]);
   const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated } = useAuth();
   
   useEffect(() => {
     // Simulate loading
@@ -85,6 +88,22 @@ const ProductDetail = () => {
   
   const handleImageClick = (image: string) => {
     setMainImage(image);
+  };
+
+  const handleContactSeller = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Inicia sesión para contactar",
+        description: "Necesitas una cuenta para enviar mensajes",
+        variant: "default",
+      });
+      navigate('/login', { state: { redirectTo: `/product/${id}` } });
+      return;
+    }
+
+    // In a real app, this would create a conversation if it doesn't exist
+    // For now, we'll navigate to a mock conversation
+    navigate('/conversations/1');
   };
   
   if (isLoading) {
@@ -192,7 +211,7 @@ const ProductDetail = () => {
               </div>
               
               <div className="flex items-center space-x-4">
-                <Button className="flex-1">
+                <Button className="flex-1" onClick={handleContactSeller}>
                   <MessageCircle className="h-5 w-5 mr-2" />
                   Contactar
                 </Button>
