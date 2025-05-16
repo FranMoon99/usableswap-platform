@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SearchBar from '@/components/SearchBar';
 import ProductCard from '@/components/ProductCard';
+import ProductFilters from '@/components/ProductFilters';
 import { Loader2 } from 'lucide-react';
 
 // Simulated product data
@@ -59,11 +60,36 @@ const mockProducts = [
   },
 ];
 
+// Categories and conditions for filters
+const categories = [
+  { id: 'Electrónica', label: 'Electrónica' },
+  { id: 'Moda', label: 'Moda' },
+  { id: 'Hogar', label: 'Hogar' },
+  { id: 'Deportes', label: 'Deportes' },
+];
+
+const conditions = [
+  { id: 'Nuevo', label: 'Nuevo' },
+  { id: 'Usado - Como nuevo', label: 'Como nuevo' },
+  { id: 'Usado - Buen estado', label: 'Buen estado' },
+  { id: 'Usado - Aceptable', label: 'Aceptable' },
+];
+
 const SearchResults = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
   const [isLoading, setIsLoading] = useState(true);
   const [results, setResults] = useState<typeof mockProducts>([]);
+  const [filteredResults, setFilteredResults] = useState<typeof mockProducts>([]);
+
+  // Filter states
+  const [activeFilters, setActiveFilters] = useState({
+    categories: [] as string[],
+    conditions: [] as string[],
+    priceRange: [0, 1000] as [number, number],
+    sortBy: 'date',
+    sortOrder: 'desc' as 'asc' | 'desc',
+  });
 
   useEffect(() => {
     // Simulate API call for search
@@ -78,26 +104,62 @@ const SearchResults = () => {
         : mockProducts;
       
       setResults(filteredProducts);
+      applyFilters(filteredProducts);
       setIsLoading(false);
     }, 600); // Simulate loading delay
   }, [query]);
 
   const handleSearch = (newQuery: string) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('q', newQuery);
-    window.history.pushState({}, '', url);
-    
-    // Re-trigger search with new query
-    const filteredProducts = newQuery
-      ? mockProducts.filter(product => 
-          product.title.toLowerCase().includes(newQuery.toLowerCase()) || 
-          product.description.toLowerCase().includes(newQuery.toLowerCase()) ||
-          product.category.toLowerCase().includes(newQuery.toLowerCase())
-        )
-      : mockProducts;
-    
-    setResults(filteredProducts);
+    setSearchParams({ q: newQuery });
   };
+
+  const handleFilterChange = (filters: typeof activeFilters) => {
+    setActiveFilters(filters);
+    applyFilters(results, filters);
+  };
+
+  const applyFilters = (products: typeof mockProducts, filters = activeFilters) => {
+    let filtered = [...products];
+
+    // Apply category filters
+    if (filters.categories.length > 0) {
+      filtered = filtered.filter(product => filters.categories.includes(product.category));
+    }
+
+    // Apply condition filters
+    if (filters.conditions.length > 0) {
+      filtered = filtered.filter(product => filters.conditions.includes(product.condition));
+    }
+
+    // Apply price range filter
+    filtered = filtered.filter(
+      product => product.price >= filters.priceRange[0] && product.price <= filters.priceRange[1]
+    );
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      if (filters.sortBy === 'date') {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return filters.sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+      }
+      if (filters.sortBy === 'price') {
+        return filters.sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
+      }
+      if (filters.sortBy === 'title') {
+        return filters.sortOrder === 'asc' 
+          ? a.title.localeCompare(b.title) 
+          : b.title.localeCompare(a.title);
+      }
+      return 0;
+    });
+
+    setFilteredResults(filtered);
+  };
+
+  // Get min and max prices from products for the price range slider
+  const minPrice = Math.min(...results.map(product => product.price), 0);
+  const maxPrice = Math.max(...results.map(product => product.price), 1000);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -114,22 +176,39 @@ const SearchResults = () => {
             />
           </div>
           
+          <ProductFilters 
+            onFilterChange={handleFilterChange}
+            minPrice={minPrice}
+            maxPrice={maxPrice}
+            categories={categories}
+            conditions={conditions}
+          />
+          
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
               <p className="text-gray-500">Buscando productos...</p>
             </div>
-          ) : results.length > 0 ? (
+          ) : filteredResults.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {results.map((product) => (
-                <ProductCard key={product.id} product={product} />
+              {filteredResults.map((product) => (
+                <ProductCard 
+                  key={product.id}
+                  id={product.id}
+                  title={product.title}
+                  price={product.price}
+                  image={product.images[0]}
+                  location={product.location}
+                  category={product.category}
+                  condition={product.condition}
+                />
               ))}
             </div>
           ) : (
             <div className="text-center py-16">
               <h3 className="text-xl font-medium mb-2">No se encontraron resultados</h3>
               <p className="text-gray-500 mb-6">
-                No se encontraron productos que coincidan con tu búsqueda "{query}"
+                No se encontraron productos que coincidan con tu búsqueda "{query}" y filtros seleccionados
               </p>
             </div>
           )}
