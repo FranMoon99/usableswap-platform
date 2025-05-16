@@ -19,7 +19,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import FeaturedProducts from '@/components/FeaturedProducts';
 import { useFavorites } from '@/contexts/FavoritesContext';
-import cn from 'classnames';
+import { cn } from '@/lib/utils';
 
 // Mock product data
 const mockProductDetails = {
