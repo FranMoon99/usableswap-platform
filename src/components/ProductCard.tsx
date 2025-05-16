@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useFavorites } from '@/contexts/FavoritesContext';
 
 export interface ProductProps {
   id: string;
@@ -27,6 +28,27 @@ const ProductCard: React.FC<ProductProps> = ({
   condition,
   isNew 
 }) => {
+  const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites();
+  const favorite = isFavorite(id);
+
+  const handleFavoriteToggle = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigation to product detail
+    
+    if (favorite) {
+      removeFromFavorites(id);
+    } else {
+      addToFavorites({
+        id,
+        title,
+        price,
+        image,
+        location,
+        category,
+        condition,
+      });
+    }
+  };
+
   return (
     <div 
       className="group relative rounded-xl overflow-hidden bg-white product-card-hover border border-gray-100 transition-all duration-300"
@@ -44,9 +66,13 @@ const ProductCard: React.FC<ProductProps> = ({
         <Button
           variant="outline"
           size="icon"
-          className="absolute z-10 right-3 top-3 h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm border-0 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          className={cn(
+            "absolute z-10 right-3 top-3 h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm border-0 shadow-sm transition-opacity duration-300",
+            favorite ? "opacity-100 text-red-500 hover:text-red-600" : "opacity-0 group-hover:opacity-100"
+          )}
+          onClick={handleFavoriteToggle}
         >
-          <Heart className="h-4 w-4" />
+          <Heart className={cn("h-4 w-4", favorite ? "fill-current" : "")} />
         </Button>
         
         {/* New badge */}

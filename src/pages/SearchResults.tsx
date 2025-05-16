@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -6,7 +5,9 @@ import Footer from '@/components/Footer';
 import SearchBar from '@/components/SearchBar';
 import ProductCard from '@/components/ProductCard';
 import ProductFilters from '@/components/ProductFilters';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Filter } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 // Simulated product data
 const mockProducts = [
@@ -81,6 +82,7 @@ const SearchResults = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [results, setResults] = useState<typeof mockProducts>([]);
   const [filteredResults, setFilteredResults] = useState<typeof mockProducts>([]);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   // Filter states
   const [activeFilters, setActiveFilters] = useState({
@@ -116,6 +118,7 @@ const SearchResults = () => {
   const handleFilterChange = (filters: typeof activeFilters) => {
     setActiveFilters(filters);
     applyFilters(results, filters);
+    setIsMobileFiltersOpen(false);
   };
 
   const applyFilters = (products: typeof mockProducts, filters = activeFilters) => {
@@ -169,49 +172,79 @@ const SearchResults = () => {
         <div className="container mx-auto px-4">
           <div className="mb-8">
             <h1 className="text-2xl font-bold mb-4">Resultados de búsqueda para "{query}"</h1>
-            <SearchBar 
-              onSearch={handleSearch} 
-              initialQuery={query}
-              className="max-w-2xl"
-            />
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <SearchBar 
+                onSearch={handleSearch} 
+                initialQuery={query}
+                className="w-full md:max-w-2xl"
+              />
+              
+              {/* Mobile filters button */}
+              <Sheet open={isMobileFiltersOpen} onOpenChange={setIsMobileFiltersOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="md:hidden flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    Filtros
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[350px]">
+                  <h3 className="text-lg font-semibold mb-4">Filtros</h3>
+                  <ProductFilters 
+                    onFilterChange={handleFilterChange}
+                    minPrice={minPrice}
+                    maxPrice={maxPrice}
+                    categories={categories}
+                    conditions={conditions}
+                  />
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
           
-          <ProductFilters 
-            onFilterChange={handleFilterChange}
-            minPrice={minPrice}
-            maxPrice={maxPrice}
-            categories={categories}
-            conditions={conditions}
-          />
-          
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-              <p className="text-gray-500">Buscando productos...</p>
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Desktop filters */}
+            <div className="hidden md:block w-full md:w-64 lg:w-72 flex-shrink-0">
+              <ProductFilters 
+                onFilterChange={handleFilterChange}
+                minPrice={minPrice}
+                maxPrice={maxPrice}
+                categories={categories}
+                conditions={conditions}
+              />
             </div>
-          ) : filteredResults.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {filteredResults.map((product) => (
-                <ProductCard 
-                  key={product.id}
-                  id={product.id}
-                  title={product.title}
-                  price={product.price}
-                  image={product.images[0]}
-                  location={product.location}
-                  category={product.category}
-                  condition={product.condition}
-                />
-              ))}
+            
+            {/* Results */}
+            <div className="flex-1">
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                  <p className="text-gray-500">Buscando productos...</p>
+                </div>
+              ) : filteredResults.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {filteredResults.map((product) => (
+                    <ProductCard 
+                      key={product.id}
+                      id={product.id}
+                      title={product.title}
+                      price={product.price}
+                      image={product.images[0]}
+                      location={product.location}
+                      category={product.category}
+                      condition={product.condition}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-16">
+                  <h3 className="text-xl font-medium mb-2">No se encontraron resultados</h3>
+                  <p className="text-gray-500 mb-6">
+                    No se encontraron productos que coincidan con tu búsqueda "{query}" y filtros seleccionados
+                  </p>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="text-center py-16">
-              <h3 className="text-xl font-medium mb-2">No se encontraron resultados</h3>
-              <p className="text-gray-500 mb-6">
-                No se encontraron productos que coincidan con tu búsqueda "{query}" y filtros seleccionados
-              </p>
-            </div>
-          )}
+          </div>
         </div>
       </main>
       

@@ -18,6 +18,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import FeaturedProducts from '@/components/FeaturedProducts';
+import { useFavorites } from '@/contexts/FavoritesContext';
+import cn from 'classnames';
 
 // Mock product data
 const mockProductDetails = {
@@ -65,6 +67,8 @@ const ProductDetail = () => {
   const [mainImage, setMainImage] = useState(mockProductDetails.images[0]);
   const [isLoading, setIsLoading] = useState(true);
   const { isAuthenticated } = useAuth();
+  const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites();
+  const [favorite, setFavorite] = useState(false);
   
   useEffect(() => {
     // Simulate loading
@@ -76,6 +80,12 @@ const ProductDetail = () => {
     
     return () => clearTimeout(timer);
   }, []);
+  
+  useEffect(() => {
+    if (id) {
+      setFavorite(isFavorite(id));
+    }
+  }, [id, isFavorite]);
   
   const formattedDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -104,6 +114,34 @@ const ProductDetail = () => {
     // In a real app, this would create a conversation if it doesn't exist
     // For now, we'll navigate to a mock conversation
     navigate('/conversations/1');
+  };
+  
+  const handleFavoriteToggle = () => {
+    if (favorite) {
+      removeFromFavorites(product.id);
+      setFavorite(false);
+    } else {
+      if (!isAuthenticated) {
+        toast({
+          title: "Inicia sesión para guardar favoritos",
+          description: "Necesitas una cuenta para guardar productos",
+          variant: "default",
+        });
+        navigate('/login', { state: { redirectTo: `/product/${id}` } });
+        return;
+      }
+      
+      addToFavorites({
+        id: product.id,
+        title: product.title,
+        price: product.price,
+        image: product.images[0],
+        location: product.location,
+        category: product.category,
+        condition: product.condition,
+      });
+      setFavorite(true);
+    }
   };
   
   if (isLoading) {
@@ -219,8 +257,13 @@ const ProductDetail = () => {
                   <Phone className="h-5 w-5 mr-2" />
                   Llamar
                 </Button>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Heart className="h-5 w-5" />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className={cn("rounded-full", favorite ? "text-red-500 hover:text-red-600" : "")}
+                  onClick={handleFavoriteToggle}
+                >
+                  <Heart className={cn("h-5 w-5", favorite ? "fill-current" : "")} />
                 </Button>
                 <Button variant="ghost" size="icon" className="rounded-full">
                   <Share2 className="h-5 w-5" />

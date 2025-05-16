@@ -1,382 +1,256 @@
-
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useToast } from '@/hooks/use-toast';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import SearchBar from '@/components/SearchBar';
+import ProductCard from '@/components/ProductCard';
+import ProductFilters from '@/components/ProductFilters';
+import { Loader2, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ImagePlus, Upload, Tags, DollarSign } from 'lucide-react';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
-// Define the form schema with Zod
-const formSchema = z.object({
-  title: z.string().min(5, { message: "Title must be at least 5 characters" }).max(100, { message: "Title cannot exceed 100 characters" }),
-  description: z.string().min(20, { message: "Description must be at least 20 characters" }).max(1000, { message: "Description cannot exceed 1000 characters" }),
-  category: z.string({ required_error: "Please select a category" }),
-  price: z.coerce.number().min(0, { message: "Price cannot be negative" }).max(999999, { message: "Price is too high" }),
-  condition: z.string({ required_error: "Please select the item condition" }),
-  location: z.string().min(3, { message: "Location is required" }).optional(),
-  acceptTerms: z.literal(true, {
-    errorMap: () => ({ message: "You must accept the terms and conditions" }),
-  }),
-  images: z.any().optional(),
-});
+// Simulated product data
+const mockProducts = [
+  {
+    id: '1',
+    title: 'iPhone 12 Pro - Excelente estado',
+    description: 'Usado solo por 6 meses, viene con todos los accesorios originales y caja.',
+    price: 699.99,
+    images: ['https://images.unsplash.com/photo-1606041008023-472dfb5e530f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2376&q=80'],
+    category: 'Electrónica',
+    condition: 'Usado - Como nuevo',
+    location: 'Madrid',
+    seller: { id: '1', name: 'Carlos', rating: 4.8 },
+    createdAt: '2023-05-10T10:30:00.000Z',
+  },
+  {
+    id: '2',
+    title: 'Camiseta Nike - Talla M',
+    description: 'Camiseta deportiva, usada un par de veces, como nueva.',
+    price: 19.99,
+    images: ['https://images.unsplash.com/photo-1618354691373-d851c5c3a990?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1015&q=80'],
+    category: 'Moda',
+    condition: 'Usado - Buen estado',
+    location: 'Barcelona',
+    seller: { id: '2', name: 'Ana', rating: 4.9 },
+    createdAt: '2023-05-11T14:20:00.000Z',
+  },
+  {
+    id: '3',
+    title: 'Mesa de comedor de madera maciza',
+    description: 'Mesa de comedor extensible, para 6-8 personas. Madera de roble.',
+    price: 249.99,
+    images: ['https://images.unsplash.com/photo-1577140917170-285929fb55b7?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2340&q=80'],
+    category: 'Hogar',
+    condition: 'Usado - Buen estado',
+    location: 'Valencia',
+    seller: { id: '3', name: 'Miguel', rating: 4.7 },
+    createdAt: '2023-05-09T09:15:00.000Z',
+  },
+  {
+    id: '4',
+    title: 'Bicicleta de montaña Trek',
+    description: 'Bicicleta Trek Marlin 7, talla M/L, usada durante una temporada.',
+    price: 499.99,
+    images: ['https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2342&q=80'],
+    category: 'Deportes',
+    condition: 'Usado - Buen estado',
+    location: 'Sevilla',
+    seller: { id: '4', name: 'Laura', rating: 4.6 },
+    createdAt: '2023-05-08T16:45:00.000Z',
+  },
+];
 
-// Define the categories
+// Categories and conditions for filters
 const categories = [
-  { id: 'electronics', name: 'Electronics' },
-  { id: 'clothing', name: 'Clothing & Accessories' },
-  { id: 'home', name: 'Home & Garden' },
-  { id: 'sports', name: 'Sports & Outdoors' },
-  { id: 'toys', name: 'Toys & Games' },
-  { id: 'vehicles', name: 'Vehicles & Parts' },
-  { id: 'books', name: 'Books & Media' },
-  { id: 'other', name: 'Other' },
+  { id: 'Electrónica', label: 'Electrónica' },
+  { id: 'Moda', label: 'Moda' },
+  { id: 'Hogar', label: 'Hogar' },
+  { id: 'Deportes', label: 'Deportes' },
 ];
 
-// Define the item conditions
 const conditions = [
-  { id: 'new', name: 'New' },
-  { id: 'like_new', name: 'Like New' },
-  { id: 'good', name: 'Good' },
-  { id: 'fair', name: 'Fair' },
-  { id: 'poor', name: 'Poor' },
+  { id: 'Nuevo', label: 'Nuevo' },
+  { id: 'Usado - Como nuevo', label: 'Como nuevo' },
+  { id: 'Usado - Buen estado', label: 'Buen estado' },
+  { id: 'Usado - Aceptable', label: 'Aceptable' },
 ];
 
-type FormValues = z.infer<typeof formSchema>;
+const SearchResults = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get('q') || '';
+  const [isLoading, setIsLoading] = useState(true);
+  const [results, setResults] = useState<typeof mockProducts>([]);
+  const [filteredResults, setFilteredResults] = useState<typeof mockProducts>([]);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
-const SellProduct = () => {
-  const { user, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
-
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: '',
-      description: '',
-      category: '',
-      price: 0,
-      condition: '',
-      location: '',
-      acceptTerms: false,
-    },
+  // Filter states
+  const [activeFilters, setActiveFilters] = useState({
+    categories: [] as string[],
+    conditions: [] as string[],
+    priceRange: [0, 1000] as [number, number],
+    sortBy: 'date',
+    sortOrder: 'desc' as 'asc' | 'desc',
   });
 
-  // Handle image selection
-  const handleImageSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
+  useEffect(() => {
+    // Simulate API call for search
+    setIsLoading(true);
+    setTimeout(() => {
+      const filteredProducts = query
+        ? mockProducts.filter(product => 
+            product.title.toLowerCase().includes(query.toLowerCase()) || 
+            product.description.toLowerCase().includes(query.toLowerCase()) ||
+            product.category.toLowerCase().includes(query.toLowerCase())
+          )
+        : mockProducts;
+      
+      setResults(filteredProducts);
+      applyFilters(filteredProducts);
+      setIsLoading(false);
+    }, 600); // Simulate loading delay
+  }, [query]);
 
-    const newImages: string[] = [];
-    
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          newImages.push(e.target.result as string);
-          setSelectedImages(prev => [...prev, e.target!.result as string]);
-        }
-      };
-      reader.readAsDataURL(file);
+  const handleSearch = (newQuery: string) => {
+    setSearchParams({ q: newQuery });
+  };
+
+  const handleFilterChange = (filters: typeof activeFilters) => {
+    setActiveFilters(filters);
+    applyFilters(results, filters);
+    setIsMobileFiltersOpen(false);
+  };
+
+  const applyFilters = (products: typeof mockProducts, filters = activeFilters) => {
+    let filtered = [...products];
+
+    // Apply category filters
+    if (filters.categories.length > 0) {
+      filtered = filtered.filter(product => filters.categories.includes(product.category));
+    }
+
+    // Apply condition filters
+    if (filters.conditions.length > 0) {
+      filtered = filtered.filter(product => filters.conditions.includes(product.condition));
+    }
+
+    // Apply price range filter
+    filtered = filtered.filter(
+      product => product.price >= filters.priceRange[0] && product.price <= filters.priceRange[1]
+    );
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      if (filters.sortBy === 'date') {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return filters.sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+      }
+      if (filters.sortBy === 'price') {
+        return filters.sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
+      }
+      if (filters.sortBy === 'title') {
+        return filters.sortOrder === 'asc' 
+          ? a.title.localeCompare(b.title) 
+          : b.title.localeCompare(a.title);
+      }
+      return 0;
     });
+
+    setFilteredResults(filtered);
   };
 
-  // Handle form submission
-  const onSubmit = async (data: FormValues) => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to list a product.",
-        variant: "destructive",
-      });
-      navigate('/login');
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
-    try {
-      // Here you would typically send data to your backend/API
-      console.log('Form data submitted:', { ...data, images: selectedImages });
-      
-      // Show success message
-      toast({
-        title: "Product Listed Successfully",
-        description: "Your product has been listed and is now visible to others.",
-      });
-      
-      // Redirect to product page or user profile
-      navigate('/profile');
-    } catch (error) {
-      console.error('Error listing product:', error);
-      toast({
-        title: "Error",
-        description: "There was a problem listing your product. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  // Get min and max prices from products for the price range slider
+  const minPrice = Math.min(...results.map(product => product.price), 0);
+  const maxPrice = Math.max(...results.map(product => product.price), 1000);
 
   return (
-    <div className="container mx-auto py-16 px-4 md:px-6 lg:pt-24">
-      <Card className="max-w-3xl mx-auto">
-        <CardHeader>
-          <CardTitle className="text-2xl md:text-3xl">Sell Your Item</CardTitle>
-          <CardDescription>
-            Fill in the details below to list your item for sale.
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Product Title */}
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Product Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. Sony PlayStation 5 Console" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Create a clear and concise title that describes your item.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      
+      <main className="flex-grow pt-24 pb-16">
+        <div className="container mx-auto px-4">
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold mb-4">Resultados de búsqueda para "{query}"</h1>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <SearchBar 
+                onSearch={handleSearch} 
+                initialQuery={query}
+                className="w-full md:max-w-2xl"
               />
-
-              {/* Product Images */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <FormLabel>Product Images</FormLabel>
-                  <div>
-                    <Input 
-                      id="productImages" 
-                      type="file" 
-                      multiple 
-                      accept="image/*" 
-                      className="hidden" 
-                      onChange={handleImageSelection}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => document.getElementById('productImages')?.click()}
-                    >
-                      <ImagePlus className="h-4 w-4 mr-2" />
-                      Add Images
-                    </Button>
-                  </div>
+              
+              {/* Mobile filters button */}
+              <Sheet open={isMobileFiltersOpen} onOpenChange={setIsMobileFiltersOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="md:hidden flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    Filtros
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[350px]">
+                  <h3 className="text-lg font-semibold mb-4">Filtros</h3>
+                  <ProductFilters 
+                    onFilterChange={handleFilterChange}
+                    minPrice={minPrice}
+                    maxPrice={maxPrice}
+                    categories={categories}
+                    conditions={conditions}
+                  />
+                </SheetContent>
+              </Sheet>
+            </div>
+          </div>
+          
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Desktop filters */}
+            <div className="hidden md:block w-full md:w-64 lg:w-72 flex-shrink-0">
+              <ProductFilters 
+                onFilterChange={handleFilterChange}
+                minPrice={minPrice}
+                maxPrice={maxPrice}
+                categories={categories}
+                conditions={conditions}
+              />
+            </div>
+            
+            {/* Results */}
+            <div className="flex-1">
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                  <p className="text-gray-500">Buscando productos...</p>
                 </div>
-                
-                {selectedImages.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-3">
-                    {selectedImages.map((src, index) => (
-                      <div key={index} className="relative overflow-hidden rounded-md border">
-                        <AspectRatio ratio={1 / 1}>
-                          <img
-                            src={src}
-                            alt={`Product image ${index + 1}`}
-                            className="object-cover w-full h-full"
-                          />
-                        </AspectRatio>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="border-2 border-dashed rounded-md p-8 text-center flex flex-col items-center justify-center text-muted-foreground">
-                    <Upload className="h-8 w-8 mb-2" />
-                    <p className="text-sm">Drag images here or click the Add Images button above</p>
-                    <p className="text-xs mt-1">Maximum 5 images, JPEG or PNG format</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Category */}
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {categories.map(category => (
-                          <SelectItem key={category.id} value={category.id}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Choose the category that best fits your item.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Price */}
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Price</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                          <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        </span>
-                        <Input 
-                          type="number" 
-                          placeholder="0.00" 
-                          className="pl-9"
-                          {...field}
-                          onChange={event => field.onChange(+event.target.value)}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Condition */}
-              <FormField
-                control={form.control}
-                name="condition"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Condition</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select condition" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {conditions.map(condition => (
-                          <SelectItem key={condition.id} value={condition.id}>
-                            {condition.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Be honest about the condition of your item.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Description */}
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Describe your item in detail. Include features, defects, history, etc." 
-                        className="resize-none min-h-[120px]"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Provide a detailed description that helps buyers understand your item better.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Location */}
-              <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Location</FormLabel>
-                    <FormControl>
-                      <Input placeholder="City, State" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Add your location to help nearby buyers find your item.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Terms and Conditions */}
-              <FormField
-                control={form.control}
-                name="acceptTerms"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                    <FormControl>
-                      <Checkbox 
-                        checked={field.value} 
-                        onCheckedChange={field.onChange} 
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Terms and Conditions</FormLabel>
-                      <FormDescription>
-                        I agree to the terms of service and privacy policy.
-                      </FormDescription>
-                      <FormMessage />
-                    </div>
-                  </FormItem>
-                )}
-              />
-
-              <div className="mt-6">
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Listing Product...' : 'List Product'}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+              ) : filteredResults.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {filteredResults.map((product) => (
+                    <ProductCard 
+                      key={product.id}
+                      id={product.id}
+                      title={product.title}
+                      price={product.price}
+                      image={product.images[0]}
+                      location={product.location}
+                      category={product.category}
+                      condition={product.condition}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-16">
+                  <h3 className="text-xl font-medium mb-2">No se encontraron resultados</h3>
+                  <p className="text-gray-500 mb-6">
+                    No se encontraron productos que coincidan con tu búsqueda "{query}" y filtros seleccionados
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+      
+      <Footer />
     </div>
   );
 };
 
-export default SellProduct;
+export default SearchResults;
