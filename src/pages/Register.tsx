@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -48,6 +49,7 @@ const Register = () => {
   const { register: registerUser, user, resendVerificationEmail } = useAuth();
   const navigate = useNavigate();
   const [registered, setRegistered] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordRequirements, setPasswordRequirements] = useState<{
     length: boolean;
     uppercase: boolean;
@@ -90,6 +92,11 @@ const Register = () => {
       if (name === 'password' && value.password) {
         updatePasswordRequirements(value.password);
       }
+      
+      // Clear email error when email field changes
+      if (name === 'email') {
+        setEmailError(null);
+      }
     });
     return () => subscription.unsubscribe();
   }, [form.watch]);
@@ -112,9 +119,18 @@ const Register = () => {
       setRegistered(true);
     } catch (error) {
       console.error('Registration error:', error);
-      toast.error('Error al registrarse', {
-        description: 'Por favor intenta de nuevo más tarde'
-      });
+      
+      // Handle duplicate email error
+      if (error instanceof Error && error.message === 'El usuario ya existe') {
+        setEmailError('Este correo electrónico ya está registrado');
+        toast.error('Email ya registrado', {
+          description: 'Este correo electrónico ya está en uso. Por favor utiliza otro.'
+        });
+      } else {
+        toast.error('Error al registrarse', {
+          description: 'Por favor intenta de nuevo más tarde'
+        });
+      }
     }
   };
 
@@ -216,8 +232,12 @@ const Register = () => {
                         placeholder="tu@email.com" 
                         type="email"
                         {...field} 
+                        className={emailError ? "border-red-500 focus-visible:ring-red-500" : ""}
                       />
                     </FormControl>
+                    {emailError && (
+                      <p className="text-sm font-medium text-destructive">{emailError}</p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
