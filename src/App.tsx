@@ -17,7 +17,9 @@ import SellProduct from "./pages/SellProduct";
 import SearchResults from "./pages/SearchResults";
 import Conversations from "./pages/Conversations";
 import Favorites from "./pages/Favorites";
-import EmailVerification from "./pages/EmailVerification"; // Added email verification page
+import EmailVerification from "./pages/EmailVerification";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +45,8 @@ const App = () => (
               <Route path="/conversations/:conversationId" element={<Conversations />} />
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/verify-email" element={<EmailVerification />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
