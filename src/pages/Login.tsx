@@ -52,6 +52,10 @@ const Login = () => {
         toast.error('Email no verificado', {
           description: 'Por favor verifica tu correo electrónico para continuar'
         });
+      } else if (error instanceof Error && error.message === 'Contraseña incorrecta') {
+        toast.error('Contraseña incorrecta', {
+          description: 'Por favor verifica tu contraseña e intenta de nuevo'
+        });
       } else {
         toast.error('Error al iniciar sesión', {
           description: 'Por favor verifica tus credenciales e intenta de nuevo'
@@ -62,7 +66,6 @@ const Login = () => {
 
   const handleVerifyClick = () => {
     // Navigate to Register which will show verification UI if user exists
-    // In a real app you might have a dedicated verification page
     navigate('/register');
   };
 

@@ -1,5 +1,5 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { validatePassword } from '@/utils/passwordUtils';
 
 type User = {
   id: string;
@@ -56,6 +56,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       // In real app we would verify password hash here
       const userData = users[email];
+
+      // Simple password check for our demo (in a real app, this would use bcrypt or similar)
+      if (password !== userData.password) {
+        throw new Error('Contraseña incorrecta');
+      }
       
       // Check if email is verified
       if (!userData.emailVerified) {
@@ -83,6 +88,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const register = async (name: string, email: string, password: string) => {
     try {
       setIsLoading(true);
+      
+      // Validate password
+      const passwordCheck = validatePassword(password);
+      if (!passwordCheck.valid) {
+        throw new Error(passwordCheck.message || 'Contraseña inválida');
+      }
+      
       // In a real app, you'd make an API call to register the user
       // For demo purposes, we'll simulate a successful registration
       

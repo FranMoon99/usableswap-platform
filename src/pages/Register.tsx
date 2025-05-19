@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -12,12 +11,31 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { MailCheck } from 'lucide-react';
+import { MailCheck, AlertCircle } from 'lucide-react';
+import { validatePassword } from '@/utils/passwordUtils';
 
+// Updated schema with enhanced password validation
 const registerSchema = z.object({
   name: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres' }),
   email: z.string().email({ message: 'Correo electrónico inválido' }),
-  password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres' }),
+  password: z.string()
+    .min(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
+    .refine(
+      (value) => /[A-Z]/.test(value),
+      { message: 'La contraseña debe incluir al menos una letra mayúscula' }
+    )
+    .refine(
+      (value) => /[a-z]/.test(value),
+      { message: 'La contraseña debe incluir al menos una letra minúscula' }
+    )
+    .refine(
+      (value) => /[0-9]/.test(value),
+      { message: 'La contraseña debe incluir al menos un número' }
+    )
+    .refine(
+      (value) => /[^A-Za-z0-9]/.test(value),
+      { message: 'La contraseña debe incluir al menos un carácter especial' }
+    ),
   confirmPassword: z.string()
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Las contraseñas no coinciden",
@@ -27,9 +45,22 @@ const registerSchema = z.object({
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 const Register = () => {
-  const { register, user, resendVerificationEmail } = useAuth();
+  const { register: registerUser, user, resendVerificationEmail } = useAuth();
   const navigate = useNavigate();
   const [registered, setRegistered] = useState(false);
+  const [passwordRequirements, setPasswordRequirements] = useState<{
+    length: boolean;
+    uppercase: boolean;
+    lowercase: boolean;
+    number: boolean;
+    special: boolean;
+  }>({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    special: false,
+  });
   
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -39,11 +70,42 @@ const Register = () => {
       password: '',
       confirmPassword: '',
     },
+    mode: 'onChange',
   });
+  
+  // Update password requirements indicators in real-time
+  const updatePasswordRequirements = (password: string) => {
+    setPasswordRequirements({
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[^A-Za-z0-9]/.test(password),
+    });
+  };
+
+  // Monitor password field changes
+  React.useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'password' && value.password) {
+        updatePasswordRequirements(value.password);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form.watch]);
 
   const onSubmit = async (data: RegisterFormValues) => {
     try {
-      await register(data.name, data.email, data.password);
+      // Double-check password validity
+      const passwordCheck = validatePassword(data.password);
+      if (!passwordCheck.valid) {
+        toast.error('Contraseña inválida', {
+          description: passwordCheck.message
+        });
+        return;
+      }
+      
+      await registerUser(data.name, data.email, data.password);
       toast.success('¡Registro exitoso!', {
         description: 'Se ha enviado un correo de verificación a tu dirección de email'
       });
@@ -175,6 +237,30 @@ const Register = () => {
                       />
                     </FormControl>
                     <FormMessage />
+                    
+                    {/* Password requirements indicators */}
+                    <div className="mt-2 space-y-1 text-xs">
+                      <div className={`flex items-center gap-1 ${passwordRequirements.length ? 'text-green-600' : 'text-gray-500'}`}>
+                        <div className={`w-1 h-1 rounded-full ${passwordRequirements.length ? 'bg-green-600' : 'bg-gray-400'}`}></div>
+                        Al menos 8 caracteres
+                      </div>
+                      <div className={`flex items-center gap-1 ${passwordRequirements.uppercase ? 'text-green-600' : 'text-gray-500'}`}>
+                        <div className={`w-1 h-1 rounded-full ${passwordRequirements.uppercase ? 'bg-green-600' : 'bg-gray-400'}`}></div>
+                        Al menos una letra mayúscula (A-Z)
+                      </div>
+                      <div className={`flex items-center gap-1 ${passwordRequirements.lowercase ? 'text-green-600' : 'text-gray-500'}`}>
+                        <div className={`w-1 h-1 rounded-full ${passwordRequirements.lowercase ? 'bg-green-600' : 'bg-gray-400'}`}></div>
+                        Al menos una letra minúscula (a-z)
+                      </div>
+                      <div className={`flex items-center gap-1 ${passwordRequirements.number ? 'text-green-600' : 'text-gray-500'}`}>
+                        <div className={`w-1 h-1 rounded-full ${passwordRequirements.number ? 'bg-green-600' : 'bg-gray-400'}`}></div>
+                        Al menos un número (0-9)
+                      </div>
+                      <div className={`flex items-center gap-1 ${passwordRequirements.special ? 'text-green-600' : 'text-gray-500'}`}>
+                        <div className={`w-1 h-1 rounded-full ${passwordRequirements.special ? 'bg-green-600' : 'bg-gray-400'}`}></div>
+                        Al menos un carácter especial (!@#$%^&*)
+                      </div>
+                    </div>
                   </FormItem>
                 )}
               />
