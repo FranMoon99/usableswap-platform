@@ -86,7 +86,10 @@ const ForgotPassword = () => {
             <div className="flex flex-col gap-4">
               <Button 
                 variant="outline" 
-                onClick={() => form.reset() || setSubmitted(false)}
+                onClick={() => {
+                  form.reset();
+                  setSubmitted(false);
+                }}
                 className="w-full"
               >
                 Solicitar otro email
