@@ -1,12 +1,12 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import * as bcrypt from 'bcryptjs';
 
 type User = {
   id: string;
   email: string;
   name: string;
   avatar?: string;
-  emailVerified: boolean;
+  emailVerified: boolean; // Added emailVerified field
 };
 
 interface AuthContextType {
@@ -16,14 +16,11 @@ interface AuthContextType {
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
-  verifyEmail: (token: string) => Promise<void>;
-  resendVerificationEmail: () => Promise<void>;
+  verifyEmail: (token: string) => Promise<void>; // New method for email verification
+  resendVerificationEmail: () => Promise<void>; // New method to resend verification email
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Number of salt rounds for bcrypt (higher is more secure but slower)
-const SALT_ROUNDS = 10;
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -47,6 +44,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       setIsLoading(true);
       // In a real app, you'd make an API call to authenticate
+      // For demo purposes, we'll simulate a successful login and check verification
       
       // Simulate checking if user exists in localStorage (for our mock database)
       const usersStore = localStorage.getItem('usersDb') || '{}';
@@ -56,14 +54,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw new Error('Usuario no encontrado');
       }
       
-      // Get user data
+      // In real app we would verify password hash here
       const userData = users[email];
-      
-      // Compare the hashed password
-      const passwordMatch = await bcrypt.compare(password, userData.password);
-      if (!passwordMatch) {
-        throw new Error('Contraseña incorrecta');
-      }
       
       // Check if email is verified
       if (!userData.emailVerified) {
@@ -92,6 +84,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       setIsLoading(true);
       // In a real app, you'd make an API call to register the user
+      // For demo purposes, we'll simulate a successful registration
       
       // Generate an ID for the user and a verification token
       const userId = Math.random().toString(36).substr(2, 9);
@@ -104,9 +97,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
       };
       localStorage.setItem('verificationTokens', JSON.stringify(tokens));
-      
-      // Hash the password
-      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
       
       // Store the user in our mock database (localStorage)
       const usersStore = localStorage.getItem('usersDb') || '{}';
@@ -121,7 +111,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         id: userId,
         email,
         name,
-        password: hashedPassword, // Store the hashed password
+        password, // In a real app, we would hash this password
         emailVerified: false,
         registeredAt: new Date().toISOString()
       };
