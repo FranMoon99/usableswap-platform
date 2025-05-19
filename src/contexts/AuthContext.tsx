@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 
 type User = {
   id: string;
