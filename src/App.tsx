@@ -20,6 +20,7 @@ import Favorites from "./pages/Favorites";
 import EmailVerification from "./pages/EmailVerification";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import Trending from "./pages/Trending";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="/verify-email" element={<EmailVerification />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/trending" element={<Trending />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
